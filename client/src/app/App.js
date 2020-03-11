@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { Component, useState} from 'react';
 import './App.css';
 import { Route, withRouter, Switch, Router } from 'react-router-dom';
 
@@ -9,20 +9,25 @@ import { Login, Signup, Profile } from '../user';
 import { LoadingIndicator, Navbar } from '../common';
 
 import { Layout, notification } from 'antd';
-import { Home, Assignor, Admin } from '../pages';
+import {Games} from '../components/APIGameControls/Games';
+import {apiGetGames} from '../utility/APIGameControl';
+import { Home, Assignor, Admin, Coach } from '../pages';
 
 import { MyModal } from '../components';
 
 const { Content } = Layout;
 
-class App extends Component {
+class  App extends Component{
 	constructor(props) {
 		super(props);
+
 		this.state = {
 			currentUser: null,
 			isAuthenticated: false, //Change for Debugging
-			isLoading: false
+			isLoading: false,
+			games: null
 		};
+
 		this.handleLogout = this.handleLogout.bind(this);
 		this.loadCurrentUser = this.loadCurrentUser.bind(this);
 		this.handleLogin = this.handleLogin.bind(this);
@@ -33,6 +38,7 @@ class App extends Component {
 			duration: 3
 		});
 	}
+
 
 	loadCurrentUser() {
 		this.setState({
@@ -45,17 +51,29 @@ class App extends Component {
 					isAuthenticated: true,
 					isLoading: false
 				});
+
+				console.log("USER = " + JSON.stringify(this.state.currentUser))
 			})
 			.catch((error) => {
 				this.setState({
 					isLoading: false
 				});
 			});
+
 	}
 
-	componentDidMount() {
+	async componentDidMount() {
 		this.loadCurrentUser();
+		
+		await apiGetGames().then(response =>{
+            this.setState({
+				games: response
+			});
+		})
+		
+		console.log("MOUNT GAMES: " + JSON.stringify(this.state.games));
 	}
+
 
 	handleLogout(redirectTo = '/', notificationType = 'success', description = "You're successfully logged out.") {
 		localStorage.removeItem(ACCESS_TOKEN);
@@ -84,6 +102,7 @@ class App extends Component {
 	}
 
 	render() {
+
 		if (this.state.isLoading) {
 			return <LoadingIndicator />;
 		}
@@ -99,7 +118,6 @@ class App extends Component {
 					:
 					<></>
 				}
-
 				<Content className="app-content">
 					<div className="container">
 						{!this.state.isAuthenticated ?
@@ -118,11 +136,14 @@ class App extends Component {
 								/>
 							</Switch>
 							:
+							<Games games={this.state.games}>
 							<Switch>
 								<Route path="/assignor" render={() => <Assignor />} />
 								<Route path="/admin" render={() => <Admin />} />
+								<Route path="/coach" render={() => <Coach />} />
 								<Route path="/" render={() => <Home isAuthenticated={this.state.isAuthenticated} />} />
 							</Switch>
+							</Games>
 						}
 					</div>
 				</Content>
